@@ -1,3 +1,5 @@
+use crate::math::space::{Multivector, NormedSpace};
+
 /// An enum representing the orientation of a `k`-blade. This has different
 /// meanings depending on the grade of the blade. For example:
 ///
@@ -20,14 +22,13 @@ pub enum Orientation {
 ///
 /// A `k`-blade is any object that can be expressed as the outer (exterior) product
 /// of `k` vectors and is of grade `k`.
-pub trait Blade<T> {
+pub trait Blade<T = Self>: Multivector<T> {
     // TODO fn attitude() -> T;
 
     fn orientation(&self) -> Orientation;
 
-    fn norm(&self) -> T;
-
-    fn grade(&self) -> usize;
+    /// Static function that returns the grade of this blade
+    fn grade() -> usize;
 }
 
 /// Returns the total number of basis blades in a `dim`-dimensional space.

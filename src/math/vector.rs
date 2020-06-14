@@ -4,7 +4,7 @@ use crate::math::bivector::Bivector3;
 use crate::math::rotor::Rotor3;
 use crate::math::trivector::Trivector3;
 
-use num_traits::{Float, Zero};
+use num_traits::{Float, One, Zero};
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub struct Vector3<T> {
@@ -19,20 +19,37 @@ pub struct Vector3<T> {
 }
 
 impl<T> Vector3<T> {
-    fn new(a1: T, a2: T, a3: T) -> Self {
+    pub fn new(a1: T, a2: T, a3: T) -> Self {
         Self { a1, a2, a3 }
     }
 }
 
 impl<T> Vector3<T>
 where
-    T: Copy + Mul<Output = T> + Sub<Output = T>,
+    T: One + Zero,
+{
+    pub fn unit_x() -> Self {
+        Vector3::new(One::one(), Zero::zero(), Zero::zero())
+    }
+
+    pub fn unit_y() -> Self {
+        Vector3::new(Zero::zero(), One::one(), Zero::zero())
+    }
+
+    pub fn unit_z() -> Self {
+        Vector3::new(Zero::zero(), Zero::zero(), One::one())
+    }
+}
+
+impl<T> Vector3<T>
+where
+    T: Mul<Output = T> + Sub<Output = T> + Copy,
 {
     /// Constructs a bivector from a pair of vectors in R3 via the outer
-    /// (wedge) product: `u ^ v`. Here, `self` is `u` and `rhs` is `v`.
+    /// (wedge) product: `u^v`. Here, `self` is `u` and `rhs` is `v`.
     ///
     /// Note that the resulting bivector is expressed in terms of the
-    /// three basis bivectors `x ^ y`, `x ^ z`, and `y ^ z`. These are
+    /// three basis bivectors `x^y`, `x^z`, and `y^z`. These are
     /// often written as e₁₂, e₁₃, and e₂₃, respectively. A different
     /// basis could be used, such as { e₁₂, e₂₃, e₃₁ }. We would
     /// simply need to switch some of the signs below to reflect this
@@ -41,11 +58,11 @@ where
     /// Another way to calculate this product would be via the (pseudo)
     /// determinant of the following 3x3 matrix:
     ///
-    ///             | e₂₃  e₁₃  e₁₂ |
-    ///             | u₁   u₂   u₃  |
-    ///             | v₁   v₂   v₃  |
+    ///             `| e₂₃  e₁₃  e₁₂ |`
+    ///             `| u₁   u₂   u₃  |`
+    ///             `| v₁   v₂   v₃  |`
     #[inline]
-    fn wedge(self, rhs: Vector3<T>) -> Bivector3<T> {
+    pub fn wedge(self, rhs: Vector3<T>) -> Bivector3<T> {
         Bivector3::new(
             self.a1 * rhs.a2 - self.a2 * rhs.a1, // XY (i.e. e₁₂)
             self.a1 * rhs.a3 - self.a3 * rhs.a1, // XZ (i.e. e₁₃)
@@ -56,19 +73,19 @@ where
 
 impl<T> Vector3<T>
 where
-    T: Add<Output = T> + Copy + Mul<Output = T>,
+    T: Add<Output = T> + Mul<Output = T> + Copy,
 {
     /// Also known as the "dot product," the inner product is a measure of
     /// similarity between two vectors. It takes as input two vectors `u`
     /// and `v` and returns a scalar, i.e. grade-0 object.
     #[inline]
-    fn dot(self, rhs: Self) -> T {
+    pub fn dot(self, rhs: Self) -> T {
         self.a1 * rhs.a1 + self.a2 * rhs.a2 + self.a3 * rhs.a3
     }
 
-    /// For a vector `u`, the squared length of `u` is given by `u.u`.
+    /// For a vector `u`, the squared length of `u` is given by `u•u`.
     #[inline]
-    fn norm_squared(self) -> T {
+    pub fn norm_squared(self) -> T {
         self.dot(self)
     }
 
@@ -76,7 +93,7 @@ where
     /// operation is required, and thus, this function only works
     /// for floats.
     #[inline]
-    fn norm(self) -> T
+    pub fn norm(self) -> T
     where
         T: Float,
     {
@@ -85,7 +102,7 @@ where
 
     /// The inverse of the vector under the geometric product.
     #[inline]
-    fn inverse(self) -> Self
+    pub fn inverse(self) -> Self
     where
         T: Div<Output = T>,
     {
@@ -94,7 +111,7 @@ where
 
     /// Returns a normalized version of the vector.
     #[inline]
-    fn normalize(self) -> Self
+    pub fn normalize(self) -> Self
     where
         T: Float,
     {
@@ -104,17 +121,17 @@ where
     /// Returns the projection of `u` onto `v`, using the dot product
     /// and the geometric inverse of `v`.
     #[inline]
-    fn project(self, rhs: Self) -> Self
+    pub fn project(self, rhs: Self) -> Self
     where
         T: Div<Output = T>,
     {
-        // Normally, we would write this as `(u.v)v_inv`, but we can't multiply
-        // a scalar by a vector on the left
+        // Normally, we would write this as `(u•v)v⁻¹`, but we can't multiply
+        // a scalar by a vector on the left with the current API
         rhs.inverse() * self.dot(rhs)
     }
 
     // Returns the reflection of `u` about `v`. The geometric algebra version of
-    // this problem involves 2 geometric products: `u' = v_inv * u * v`. In general,
+    // this problem involves 2 geometric products: `u' = v⁻¹uv`. In general,
     // this sequence of operations will either produce a vector or a trivector.
     // However, the trivector case only occurs when the 3 vectors are linearly
     // independent, which is obviously not the case with the reflection formula
@@ -137,7 +154,7 @@ where
 
     #[inline]
     fn add(self, rhs: Self) -> Self::Output {
-        Vector3 {
+        Self {
             a1: self.a1 + rhs.a1,
             a2: self.a2 + rhs.a2,
             a3: self.a3 + rhs.a3,
@@ -154,7 +171,7 @@ where
 
     #[inline]
     fn div(self, rhs: T) -> Self::Output {
-        Vector3 {
+        Self {
             a1: self.a1 / rhs,
             a2: self.a2 / rhs,
             a3: self.a3 / rhs,
@@ -171,7 +188,7 @@ where
 
     #[inline]
     fn mul(self, rhs: T) -> Self::Output {
-        Vector3 {
+        Self {
             a1: self.a1 * rhs,
             a2: self.a2 * rhs,
             a3: self.a3 * rhs,
@@ -181,13 +198,13 @@ where
 
 /// Multiply two vectors via the geometric product, producing a multivector
 /// with a scalar (grade-0) part and a bivector (grade-2) part, a.k.a a rotor
-impl<T> Mul<Vector3<T>> for Vector3<T>
+impl<T> Mul for Vector3<T>
 where
-    T: Add<Output = T> + Copy + Mul<Output = T> + Sub<Output = T>,
+    T: Add<Output = T> + Mul<Output = T> + Sub<Output = T> + Copy,
 {
     type Output = Rotor3<T>;
 
-    fn mul(self, rhs: Vector3<T>) -> Self::Output {
+    fn mul(self, rhs: Self) -> Self::Output {
         Rotor3::new(self.dot(rhs), self.wedge(rhs))
     }
 }
@@ -196,7 +213,7 @@ where
 /// multivector with a vector (grade-1) part and a trivector (grade-3) part
 impl<T> Mul<Bivector3<T>> for Vector3<T>
 where
-    T: Add<Output = T> + Copy + Mul<Output = T> + Neg<Output = T> + Sub<Output = T>,
+    T: Add<Output = T> + Mul<Output = T> + Neg<Output = T> + Sub<Output = T> + Copy,
 {
     type Output = (Vector3<T>, Trivector3<T>);
 
@@ -244,7 +261,7 @@ where
 
     #[inline]
     fn sub(self, rhs: Self) -> Self::Output {
-        Vector3 {
+        Self {
             a1: self.a1 - rhs.a1,
             a2: self.a2 - rhs.a2,
             a3: self.a3 - rhs.a3,
@@ -259,7 +276,7 @@ where
 {
     #[inline]
     fn zero() -> Self {
-        Vector3::new(Zero::zero(), Zero::zero(), Zero::zero())
+        Self::new(Zero::zero(), Zero::zero(), Zero::zero())
     }
 
     #[inline]
@@ -274,71 +291,104 @@ mod tests {
 
     #[test]
     fn add() {
-        let a = Vector3::new(0.0, 1.0, 2.0);
-        let b = Vector3::new(3.0, 4.0, 5.0);
-        let res = a + b;
+        let u = Vector3::new(0.0, 1.0, 2.0);
+        let v = Vector3::new(3.0, 4.0, 5.0);
+        let res = u + v;
         println!("Testing vector addition...");
+        println!("  u + v = {:?}", res);
         assert_eq!(res, Vector3::new(3.0, 5.0, 7.0));
     }
 
     #[test]
     fn sub() {
-        let a = Vector3::new(0.0, 1.0, 2.0);
-        let b = Vector3::new(3.0, 4.0, 5.0);
-        let res = a - b;
+        let u = Vector3::new(0.0, 1.0, 2.0);
+        let v = Vector3::new(3.0, 4.0, 5.0);
+        let res = u - v;
         println!("Testing vector subtraction...");
+        println!("  u - v = {:?}", res);
         assert_eq!(res, Vector3::new(-3.0, -3.0, -3.0));
     }
 
     #[test]
     fn outer_product() {
-        // `a` and `b` are the same, so `a ^ b` should return the zero bivector
-        let a = Vector3::new(0.0, 1.0, 2.0);
-        let b = Vector3::new(0.0, 1.0, 2.0);
-        let res_0 = a.wedge(b);
-        let res_1 = b.wedge(a);
+        // `u` and `v` are the same, so `u^v` should return the zero bivector
+        let u = Vector3::new(0.0, 1.0, 2.0);
+        let v = Vector3::new(0.0, 1.0, 2.0);
+        let res_0 = u.wedge(v);
+        let res_1 = v.wedge(u);
         println!("Testing vector outer product with parallel vectors...");
-        println!("  a^b = {:?}", res_0);
-        println!("  b^a = {:?}", res_1);
+        println!("  u^v = {:?}", res_0);
+        println!("  v^u = {:?}", res_1);
         assert_eq!(res_0, Bivector3::zero());
         assert_eq!(res_1, Bivector3::zero());
 
-        let a = Vector3::new(1.0, 0.0, 0.0);
-        let b = Vector3::new(0.0, 1.0, 0.0);
-        let res_0 = a.wedge(b);
-        let res_1 = b.wedge(a);
-        println!("Testing vector outer product with basis vectors e1 and e2...");
-        println!("  a^b = {:?}", res_0);
-        println!("  b^a = {:?}", res_1);
+        let u = Vector3::new(1.0, 0.0, 0.0);
+        let v = Vector3::new(0.0, 1.0, 0.0);
+        let res_0 = u.wedge(v);
+        let res_1 = v.wedge(u);
+        println!("Testing vector outer product with orthogonal vectors...");
+        println!("  u^v = {:?}", res_0);
+        println!("  v^u = {:?}", res_1);
         assert_eq!(res_0, Bivector3::new(1.0, 0.0, 0.0));
         assert_eq!(res_1, Bivector3::new(-1.0, 0.0, 0.0));
-    }
 
-    fn inner_product() {
-        let a = Vector3::new(0.0, 1.0, 2.0);
-        let b = Vector3::new(3.0, 4.0, 5.0);
-
-        let res = a * b;
+        let u = Vector3::new(0.0, 1.0, 2.0);
+        let v = Vector3::new(3.0, 4.0, 5.0);
+        let res = u.wedge(v);
 
         // The inner (dot) product and outer (wedge) product are subsidiary
         // operations, related to the geometric product as follows:
         //
-        // u.v = 1/2 (uv + vu)
-        // u^v = 1/2 (uv - vu)
+        // u•v = ½(uv + vu)
+        // u^v = ½(uv - vu)
+        //
+        // These are rotors that we can add component-wise
+        let uv = u * v;
+        let vu = v * u;
+        let rotor = Rotor3::new(uv.scalar - vu.scalar, uv.bivector - vu.bivector) * 0.5;
+        println!("Testing vector outer product and its relation to the geometric product...");
+        println!("  u^v = {:?}", res);
+        println!("  ½(uv - vu) = {:?}", rotor);
+        assert_eq!(0.0, rotor.scalar);
+        assert_eq!(res, rotor.bivector);
+    }
+
+    #[test]
+    fn inner_product() {
+        // Take the dot product between the two vectors `u` and `v`
+        let u = Vector3::new(0.0, 1.0, 2.0);
+        let v = Vector3::new(3.0, 4.0, 5.0);
+        let res = u.dot(v);
+
+        // The inner (dot) product and outer (wedge) product are subsidiary
+        // operations, related to the geometric product as follows:
+        //
+        // u•v = ½(uv + vu)
+        // u^v = ½(uv - vu)
+        //
+        // These are rotors that we can add component-wise
+        let uv = u * v;
+        let vu = v * u;
+        let rotor = Rotor3::new(uv.scalar + vu.scalar, uv.bivector + vu.bivector) * 0.5;
+        println!("Testing vector inner product and its relation to the geometric product...");
+        println!("  u•v = {:?}", res);
+        println!("  ½(uv + vu) = {:?}", rotor);
+        assert!((res - 14.0).abs() <= 0.001);
+        assert!((rotor.scalar - res).abs() <= 0.001);
+        assert_eq!(rotor.bivector, Bivector3::zero());
     }
 
     #[test]
     fn inverse() {
-        // For any vector `u`, taking the geometric product of `u` inverse and `u`
+        // For any vector `u`, taking the geometric product of `u⁻¹` and `u`
         // should be 1 (a scalar with no bivector part)
-        let a = Vector3::new(1.0f64, 2.0, 3.0);
-        let b = a.inverse();
-
-        let res = b * a;
+        let u = Vector3::new(1.0, 2.0, 3.0);
+        let u_inv = u.inverse();
+        let res = u_inv * u;
         println!("Testing vector inverse...");
-        println!("  b_inv*a = {:?}", res);
-        assert!((res.a - 1.0).abs() <= 0.001);
-        assert_eq!(res.b, Bivector3::zero());
+        println!("  u⁻¹u = {:?}", res);
+        assert!((res.scalar - 1.0).abs() <= 0.001);
+        assert_eq!(res.bivector, Bivector3::zero());
     }
 
     #[test]
