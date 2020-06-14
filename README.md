@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/mwalczyk/kami.svg?branch=master)](https://travis-ci.org/mwalczyk/kami) [![Coverage Status](https://coveralls.io/repos/github/mwalczyk/kami/badge.svg?branch=master)](https://coveralls.io/github/mwalczyk/kami?branch=master)
+
 # Resources
 - [Clifford / Geometric Algebra Intuition](https://www.euclideanspace.com/maths/algebra/clifford/index.htm)
 - [Geometric Algebra: An Introduction with Applications in Euclidean and Conformal Geometry](https://scholarworks.sjsu.edu/cgi/viewcontent.cgi?article=7943&context=etd_theses)
