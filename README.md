@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/mwalczyk/kami.svg?branch=master)](https://travis-ci.org/mwalczyk/kami) [![Coverage Status](https://coveralls.io/repos/github/mwalczyk/kami/badge.svg?branch=master)](https://coveralls.io/github/mwalczyk/kami?branch=master)
+[![Build Status](https://travis-ci.org/mwalczyk/kami.svg?branch=master)](https://travis-ci.org/github/mwalczyk/kami) 
 
 # Kami
 
