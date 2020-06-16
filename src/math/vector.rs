@@ -8,17 +8,18 @@ use num_traits::{Float, One, Zero};
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub struct Vector3<T> {
-    /// 1st component, corresponding to basis vector `x` i.e. e₁
+    /// 1st component, corresponding to basis vector `x` i.e. `e₁`
     pub a1: T,
 
-    /// 2nd component, corresponding to basis vector `y` i.e. e₂
+    /// 2nd component, corresponding to basis vector `y` i.e. `e₂`
     pub a2: T,
 
-    /// 3rd component, corresponding to basis vector `z` i.e. e₃
+    /// 3rd component, corresponding to basis vector `z` i.e. `e₃`
     pub a3: T,
 }
 
 impl<T> Vector3<T> {
+    /// Construct a new vector with the specified components.
     pub fn new(a1: T, a2: T, a3: T) -> Self {
         Self { a1, a2, a3 }
     }
@@ -28,14 +29,17 @@ impl<T> Vector3<T>
 where
     T: One + Zero,
 {
+    /// Construct a unit vector aligned with the positive `x`-axis.
     pub fn unit_x() -> Self {
         Vector3::new(One::one(), Zero::zero(), Zero::zero())
     }
 
+    /// Construct a unit vector aligned with the positive `y`-axis.
     pub fn unit_y() -> Self {
         Vector3::new(Zero::zero(), One::one(), Zero::zero())
     }
 
+    /// Construct a unit vector aligned with the positive `z`-axis.
     pub fn unit_z() -> Self {
         Vector3::new(Zero::zero(), Zero::zero(), One::one())
     }
@@ -50,17 +54,17 @@ where
     ///
     /// Note that the resulting bivector is expressed in terms of the
     /// three basis bivectors `x^y`, `x^z`, and `y^z`. These are
-    /// often written as e₁₂, e₁₃, and e₂₃, respectively. A different
-    /// basis could be used, such as { e₁₂, e₂₃, e₃₁ }. We would
+    /// often written as `e₁₂`, `e₁₃`, and `e₂₃`, respectively. A different
+    /// basis could be used, such as `{ e₁₂, e₂₃, e₃₁ }`. We would
     /// simply need to switch some of the signs below to reflect this
     /// change.
     ///
-    /// Another way to calculate this product would be via the (pseudo)
+    /// Another way to calculate this product is via the (pseudo)
     /// determinant of the following 3x3 matrix:
     ///
     ///             `| e₂₃  e₁₃  e₁₂ |`
-    ///             `| u₁   u₂   u₃  |`
-    ///             `| v₁   v₂   v₃  |`
+    ///             `|  u₁   u₂   u₃ |`
+    ///             `|  v₁   v₂   v₃ |`
     #[inline]
     pub fn wedge(self, rhs: Vector3<T>) -> Bivector3<T> {
         Bivector3::new(
@@ -77,7 +81,7 @@ where
 {
     /// Also known as the "dot product," the inner product is a measure of
     /// similarity between two vectors. It takes as input two vectors `u`
-    /// and `v` and returns a scalar, i.e. grade-0 object.
+    /// and `v` and returns a scalar, i.e. a grade-0 object.
     #[inline]
     pub fn dot(self, rhs: Self) -> T {
         self.a1 * rhs.a1 + self.a2 * rhs.a2 + self.a3 * rhs.a3
@@ -145,7 +149,7 @@ where
     // }
 }
 
-/// Add two vectors, resulting in another vector
+/// Add two vectors, resulting in another vector.
 impl<T> Add for Vector3<T>
 where
     T: Add<Output = T>,
@@ -154,15 +158,11 @@ where
 
     #[inline]
     fn add(self, rhs: Self) -> Self::Output {
-        Self {
-            a1: self.a1 + rhs.a1,
-            a2: self.a2 + rhs.a2,
-            a3: self.a3 + rhs.a3,
-        }
+        Self::new(self.a1 + rhs.a1, self.a2 + rhs.a2, self.a3 + rhs.a3)
     }
 }
 
-/// Divide a vector by a scalar, resulting in another scaled vector
+/// Divide a vector by a scalar, resulting in another scaled vector.
 impl<T> Div<T> for Vector3<T>
 where
     T: Div<Output = T> + Copy,
@@ -171,15 +171,11 @@ where
 
     #[inline]
     fn div(self, rhs: T) -> Self::Output {
-        Self {
-            a1: self.a1 / rhs,
-            a2: self.a2 / rhs,
-            a3: self.a3 / rhs,
-        }
+        Self::new(self.a1 / rhs, self.a2 / rhs, self.a3 / rhs)
     }
 }
 
-/// Multiply a vector by a scalar, resulting in another scaled vector
+/// Multiply a vector by a scalar, resulting in another scaled vector.
 impl<T> Mul<T> for Vector3<T>
 where
     T: Mul<Output = T> + Copy,
@@ -188,16 +184,12 @@ where
 
     #[inline]
     fn mul(self, rhs: T) -> Self::Output {
-        Self {
-            a1: self.a1 * rhs,
-            a2: self.a2 * rhs,
-            a3: self.a3 * rhs,
-        }
+        Self::new(self.a1 * rhs, self.a2 * rhs, self.a3 * rhs)
     }
 }
 
 /// Multiply two vectors via the geometric product, producing a multivector
-/// with a scalar (grade-0) part and a bivector (grade-2) part, a.k.a a rotor
+/// with a scalar (grade-0) part and a bivector (grade-2) part, a.k.a a rotor.
 impl<T> Mul for Vector3<T>
 where
     T: Add<Output = T> + Mul<Output = T> + Sub<Output = T> + Copy,
@@ -210,7 +202,7 @@ where
 }
 
 /// Multiply a vector and a bivector via the geometric product, producing a
-/// multivector with a vector (grade-1) part and a trivector (grade-3) part
+/// multivector with a vector (grade-1) part and a trivector (grade-3) part.
 impl<T> Mul<Bivector3<T>> for Vector3<T>
 where
     T: Add<Output = T> + Mul<Output = T> + Neg<Output = T> + Sub<Output = T> + Copy,
@@ -222,7 +214,7 @@ where
     #[inline]
     fn mul(self, rhs: Bivector3<T>) -> Self::Output {
         // The vector (grade_1) part
-        let scalar = Vector3::new(
+        let vector = Vector3::new(
             -self.a2 * rhs.b1 - self.a3 * rhs.b2,
             self.a1 * rhs.b1 - self.a3 * rhs.b3,
             self.a1 * rhs.b2 + self.a2 * rhs.b3,
@@ -231,12 +223,12 @@ where
         // The trivector (grade-3) part
         let trivector = Trivector3::new(self.a1 * rhs.b3 - self.a2 * rhs.b2 + self.a3 * rhs.b1);
 
-        (scalar, trivector)
+        (vector, trivector)
     }
 }
 
 /// Negate a vector, resulting in another vector that is oriented in the opposite
-/// direction
+/// direction.
 impl<T> Neg for Vector3<T>
 where
     T: Neg<Output = T>,
@@ -244,15 +236,11 @@ where
     type Output = Self;
 
     fn neg(self) -> Self::Output {
-        Self {
-            a1: -self.a1,
-            a2: -self.a2,
-            a3: -self.a3,
-        }
+        Self::new(-self.a1, -self.a2, -self.a3)
     }
 }
 
-/// Subtract two vectors, resulting in another vector
+/// Subtract two vectors, resulting in another vector.
 impl<T> Sub for Vector3<T>
 where
     T: Sub<Output = T>,
@@ -261,15 +249,11 @@ where
 
     #[inline]
     fn sub(self, rhs: Self) -> Self::Output {
-        Self {
-            a1: self.a1 - rhs.a1,
-            a2: self.a2 - rhs.a2,
-            a3: self.a3 - rhs.a3,
-        }
+        Self::new(self.a1 - rhs.a1, self.a2 - rhs.a2, self.a3 - rhs.a3)
     }
 }
 
-/// Zero vector
+/// Zero vector.
 impl<T> Zero for Vector3<T>
 where
     T: Zero,
@@ -285,6 +269,53 @@ where
     }
 }
 
+impl<T: approx::AbsDiffEq> approx::AbsDiffEq for Vector3<T>
+where
+    T::Epsilon: Copy,
+{
+    type Epsilon = T::Epsilon;
+
+    fn default_epsilon() -> T::Epsilon {
+        T::default_epsilon()
+    }
+
+    fn abs_diff_eq(&self, other: &Self, epsilon: T::Epsilon) -> bool {
+        T::abs_diff_eq(&self.a1, &other.a1, epsilon)
+            && T::abs_diff_eq(&self.a2, &other.a2, epsilon)
+            && T::abs_diff_eq(&self.a3, &other.a3, epsilon)
+    }
+}
+
+impl<T: approx::RelativeEq> approx::RelativeEq for Vector3<T>
+where
+    T::Epsilon: Copy,
+{
+    fn default_max_relative() -> T::Epsilon {
+        T::default_max_relative()
+    }
+
+    fn relative_eq(&self, other: &Self, epsilon: T::Epsilon, max_relative: T::Epsilon) -> bool {
+        T::relative_eq(&self.a1, &other.a1, epsilon, max_relative)
+            && T::relative_eq(&self.a2, &other.a2, epsilon, max_relative)
+            && T::relative_eq(&self.a3, &other.a3, epsilon, max_relative)
+    }
+}
+
+impl<T: approx::UlpsEq> approx::UlpsEq for Vector3<T>
+where
+    T::Epsilon: Copy,
+{
+    fn default_max_ulps() -> u32 {
+        T::default_max_ulps()
+    }
+
+    fn ulps_eq(&self, other: &Self, epsilon: T::Epsilon, max_ulps: u32) -> bool {
+        T::ulps_eq(&self.a1, &other.a1, epsilon, max_ulps)
+            && T::ulps_eq(&self.a2, &other.a2, epsilon, max_ulps)
+            && T::ulps_eq(&self.a3, &other.a3, epsilon, max_ulps)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -295,8 +326,8 @@ mod tests {
         let v = Vector3::new(3.0, 4.0, 5.0);
         let res = u + v;
         println!("Testing vector addition...");
-        println!("  u + v = {:?}", res);
-        assert_eq!(res, Vector3::new(3.0, 5.0, 7.0));
+        println!("\tu + v = {:?}", res);
+        approx::assert_ulps_eq!(res, Vector3::new(3.0, 5.0, 7.0));
     }
 
     #[test]
@@ -305,8 +336,8 @@ mod tests {
         let v = Vector3::new(3.0, 4.0, 5.0);
         let res = u - v;
         println!("Testing vector subtraction...");
-        println!("  u - v = {:?}", res);
-        assert_eq!(res, Vector3::new(-3.0, -3.0, -3.0));
+        println!("\tu - v = {:?}", res);
+        approx::assert_ulps_eq!(res, Vector3::new(-3.0, -3.0, -3.0));
     }
 
     #[test]
@@ -317,20 +348,20 @@ mod tests {
         let res_0 = u.wedge(v);
         let res_1 = v.wedge(u);
         println!("Testing vector outer product with parallel vectors...");
-        println!("  u^v = {:?}", res_0);
-        println!("  v^u = {:?}", res_1);
-        assert_eq!(res_0, Bivector3::zero());
-        assert_eq!(res_1, Bivector3::zero());
+        println!("\tu^v = {:?}", res_0);
+        println!("\tv^u = {:?}", res_1);
+        approx::assert_ulps_eq!(res_0, Bivector3::zero());
+        approx::assert_ulps_eq!(res_1, Bivector3::zero());
 
         let u = Vector3::new(1.0, 0.0, 0.0);
         let v = Vector3::new(0.0, 1.0, 0.0);
         let res_0 = u.wedge(v);
         let res_1 = v.wedge(u);
         println!("Testing vector outer product with orthogonal vectors...");
-        println!("  u^v = {:?}", res_0);
-        println!("  v^u = {:?}", res_1);
-        assert_eq!(res_0, Bivector3::new(1.0, 0.0, 0.0));
-        assert_eq!(res_1, Bivector3::new(-1.0, 0.0, 0.0));
+        println!("\tu^v = {:?}", res_0);
+        println!("\tv^u = {:?}", res_1);
+        approx::assert_ulps_eq!(res_0, Bivector3::new(1.0, 0.0, 0.0));
+        approx::assert_ulps_eq!(res_1, Bivector3::new(-1.0, 0.0, 0.0));
 
         let u = Vector3::new(0.0, 1.0, 2.0);
         let v = Vector3::new(3.0, 4.0, 5.0);
@@ -347,10 +378,10 @@ mod tests {
         let vu = v * u;
         let rotor = Rotor3::new(uv.scalar - vu.scalar, uv.bivector - vu.bivector) * 0.5;
         println!("Testing vector outer product and its relation to the geometric product...");
-        println!("  u^v = {:?}", res);
-        println!("  ½(uv - vu) = {:?}", rotor);
-        assert_eq!(0.0, rotor.scalar);
-        assert_eq!(res, rotor.bivector);
+        println!("\tu^v = {:?}", res);
+        println!("\t½(uv - vu) = {:?}", rotor);
+        approx::assert_ulps_eq!(0.0, rotor.scalar);
+        approx::assert_ulps_eq!(res, rotor.bivector);
     }
 
     #[test]
@@ -371,11 +402,11 @@ mod tests {
         let vu = v * u;
         let rotor = Rotor3::new(uv.scalar + vu.scalar, uv.bivector + vu.bivector) * 0.5;
         println!("Testing vector inner product and its relation to the geometric product...");
-        println!("  u•v = {:?}", res);
-        println!("  ½(uv + vu) = {:?}", rotor);
-        assert!((res - 14.0).abs() <= 0.001);
-        assert!((rotor.scalar - res).abs() <= 0.001);
-        assert_eq!(rotor.bivector, Bivector3::zero());
+        println!("\tu•v = {:?}", res);
+        println!("\t½(uv + vu) = {:?}", rotor);
+        approx::assert_ulps_eq!(res, 14.0);
+        approx::assert_ulps_eq!(res, rotor.scalar);
+        approx::assert_ulps_eq!(rotor.bivector, Bivector3::zero());
     }
 
     #[test]
@@ -386,9 +417,9 @@ mod tests {
         let u_inv = u.inverse();
         let res = u_inv * u;
         println!("Testing vector inverse...");
-        println!("  u⁻¹u = {:?}", res);
-        assert!((res.scalar - 1.0).abs() <= 0.001);
-        assert_eq!(res.bivector, Bivector3::zero());
+        println!("\tu⁻¹u = {:?}", res);
+        approx::assert_ulps_eq!(res.scalar, 1.0);
+        approx::assert_ulps_eq!(res.bivector, Bivector3::zero());
     }
 
     #[test]
@@ -397,7 +428,7 @@ mod tests {
         let v = Vector3::new(2.0, 0.0, 0.0);
         let res = u.project(v);
         println!("Testing vector projection...");
-        println!("  {:?}", res);
-        assert_eq!(res, Vector3::new(1.0, 0.0, 0.0));
+        println!("\t{:?}", res);
+        approx::assert_ulps_eq!(res, Vector3::new(1.0, 0.0, 0.0));
     }
 }

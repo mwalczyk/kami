@@ -29,3 +29,21 @@ See the following [playlist](https://www.youtube.com/playlist?list=PLpzmRsG7u_gq
 ### WASM
 - [Getting Started](https://dev.to/sendilkumarn/rust-and-webassembly-for-the-masses-wasm-pack-3d6p)
 - [Yew](https://yew.rs/docs/)
+
+## Roadmap
+
+- Math
+	- Add remaining tests to all modules
+	- Potentially remove the trivector module
+	- Sort out inner / outer / norm traits
+	- Verify correctness of all algorithms
+	- Provide some sort of documentation / geometric interpretations
+- Graphs
+	- Planar graphs (see [petgraph](https://docs.rs/petgraph/0.5.1/petgraph/))
+	- Graphviz output format
+	- .FOLD import / export
+- Origami
+	- Implement HH axioms using geometric algebra
+- Geometry
+	- Read "Computational Geometry in C" and implement polygon class
+	- (Re)implement robust intersection routines

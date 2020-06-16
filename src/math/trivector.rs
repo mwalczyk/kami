@@ -3,13 +3,13 @@ use std::ops::Add;
 use num_traits::{One, Zero};
 
 /// An object representing an oriented volume in 3-space. Trivectors form 3-dimensional
-/// subspaces.
+/// subspaces and are also known as the pseudo-scalars (of G3).
 ///
-/// Trivectors are also known as 3-blades. Each trivector can be decomposed onto a set
-/// of basis 3-blades. In a 3-dimensional space, there is only 1 such basis 3-blade.
-/// However, in 4-dimensions, for example, there are 4: e_123, e_124, e_134, and e_234.
+/// Trivectors are 3-blades. Each trivector can be decomposed onto a set of basis 3-blades.
+/// In a 3-dimensional space, there is only 1 such basis 3-blade. However, in 4-dimensions,
+/// for example, there are 4.
 pub struct Trivector3<T> {
-    /// 1st (and only) component, corresponding to the basis trivector `x ^ y ^ z`, i.e. e_123
+    /// 1st (and only) component, corresponding to the basis trivector `x^y^z`, i.e. e₁₂₃
     t1: T,
 }
 
@@ -28,8 +28,11 @@ where
     }
 }
 
-/// Add two trivectors, resulting in another trivector
-impl<T: Add<Output = T>> Add for Trivector3<T> {
+/// Add two trivectors, resulting in another trivector.
+impl<T> Add for Trivector3<T>
+where
+    T: Add<Output = T>,
+{
     type Output = Self;
 
     #[inline]
@@ -40,7 +43,7 @@ impl<T: Add<Output = T>> Add for Trivector3<T> {
     }
 }
 
-/// Zero trivector
+/// Zero trivector.
 impl<T: Zero> Zero for Trivector3<T> {
     #[inline]
     fn zero() -> Self {
