@@ -2,6 +2,7 @@ use std::ops::{Add, Div, Mul, Neg, Sub};
 
 use crate::math::blade::{Blade, Orientation};
 use crate::math::rotor::Rotor3;
+use crate::math::space::{Contraction, Exterior, Norm};
 use crate::math::trivector::Trivector3;
 use crate::math::vector::Vector3;
 
@@ -256,6 +257,23 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn norm() {
+        let u = Vector3::new(0.0, 1.0, 2.0);
+        let v = Vector3::new(3.0, 4.0, 5.0);
+        let res = u.wedge(v);
+
+        // "Understanding Geometric Algebra" (5.44, page 67)
+        let norm = res.norm_squared();
+        let via_contraction = u.norm_squared() * v.norm_squared() - u.dot(v).powf(2.0);
+        println!("Testing bivector norm...");
+        println!(
+            "\tCalculated: {:?}, via contraction: {:?}",
+            norm, via_contraction
+        );
+        approx::assert_ulps_eq!(norm, via_contraction);
+    }
 
     fn bivector_vector_product() {
         //let lhs = a * B;

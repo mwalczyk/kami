@@ -2,6 +2,7 @@ use std::ops::{Add, Div, Mul, Neg, Sub};
 
 use crate::math::bivector::Bivector3;
 use crate::math::rotor::Rotor3;
+use crate::math::space::{Contraction, Exterior, Norm};
 use crate::math::trivector::Trivector3;
 
 use num_traits::{Float, One, Zero};
@@ -45,10 +46,27 @@ where
     }
 }
 
-impl<T> Vector3<T>
+impl<T> Contraction for Vector3<T>
+where
+    T: Add<Output = T> + Mul<Output = T>,
+{
+    type Output = T;
+
+    /// Also known as the "dot product," the inner product is a measure of
+    /// similarity between two vectors. It takes as input two vectors `u`
+    /// and `v` and returns a scalar, i.e. a grade-0 object.
+    #[inline]
+    fn dot(self, rhs: Self) -> Self::Output {
+        self.a1 * rhs.a1 + self.a2 * rhs.a2 + self.a3 * rhs.a3
+    }
+}
+
+impl<T> Exterior for Vector3<T>
 where
     T: Mul<Output = T> + Sub<Output = T> + Copy,
 {
+    type Output = Bivector3<T>;
+
     /// Constructs a bivector from a pair of vectors in R3 via the outer
     /// (wedge) product: `u^v`. Here, `self` is `u` and `rhs` is `v`.
     ///
@@ -66,7 +84,7 @@ where
     ///             `|  u₁   u₂   u₃ |`
     ///             `|  v₁   v₂   v₃ |`
     #[inline]
-    pub fn wedge(self, rhs: Vector3<T>) -> Bivector3<T> {
+    fn wedge(self, rhs: Self) -> Self::Output {
         Bivector3::new(
             self.a1 * rhs.a2 - self.a2 * rhs.a1, // XY (i.e. e₁₂)
             self.a1 * rhs.a3 - self.a3 * rhs.a1, // XZ (i.e. e₁₃)
@@ -75,60 +93,47 @@ where
     }
 }
 
-impl<T> Vector3<T>
+impl<T> Norm for Vector3<T>
 where
-    T: Add<Output = T> + Mul<Output = T> + Copy,
+    T: Add<Output = T> + Mul<Output = T> + Copy + Float,
 {
-    /// Also known as the "dot product," the inner product is a measure of
-    /// similarity between two vectors. It takes as input two vectors `u`
-    /// and `v` and returns a scalar, i.e. a grade-0 object.
-    #[inline]
-    pub fn dot(self, rhs: Self) -> T {
-        self.a1 * rhs.a1 + self.a2 * rhs.a2 + self.a3 * rhs.a3
-    }
-
-    /// For a vector `u`, the squared length of `u` is given by `u•u`.
-    #[inline]
-    pub fn norm_squared(self) -> T {
-        self.dot(self)
-    }
+    type Scalar = T;
 
     /// Compute the length of a vector `u`: note that a square root
     /// operation is required, and thus, this function only works
     /// for floats.
     #[inline]
-    pub fn norm(self) -> T
-    where
-        T: Float,
-    {
+    fn norm(self) -> Self::Scalar {
         self.norm_squared().sqrt()
     }
 
-    /// The inverse of the vector under the geometric product.
+    /// For a vector `u`, the squared length of `u` is given by `u•u`.
     #[inline]
-    pub fn inverse(self) -> Self
-    where
-        T: Div<Output = T>,
-    {
-        self / self.norm_squared()
+    fn norm_squared(self) -> Self::Scalar {
+        self.dot(self)
     }
 
     /// Returns a normalized version of the vector.
     #[inline]
-    pub fn normalize(self) -> Self
-    where
-        T: Float,
-    {
+    fn normalize(self) -> Self {
         self / self.norm()
+    }
+}
+
+impl<T> Vector3<T>
+where
+    T: Add<Output = T> + Div<Output = T> + Mul<Output = T> + Copy + Float,
+{
+    /// The inverse of the vector under the geometric product.
+    #[inline]
+    pub fn inverse(self) -> Self {
+        self / self.norm_squared()
     }
 
     /// Returns the projection of `u` onto `v`, using the dot product
     /// and the geometric inverse of `v`.
     #[inline]
-    pub fn project(self, rhs: Self) -> Self
-    where
-        T: Div<Output = T>,
-    {
+    pub fn project(self, rhs: Self) -> Self {
         // Normally, we would write this as `(u•v)v⁻¹`, but we can't multiply
         // a scalar by a vector on the left with the current API
         rhs.inverse() * self.dot(rhs)
@@ -149,66 +154,67 @@ where
     // }
 }
 
-/// Add two vectors, resulting in another vector.
 impl<T> Add for Vector3<T>
 where
     T: Add<Output = T>,
 {
     type Output = Self;
 
+    /// Add two vectors, resulting in another vector.
     #[inline]
     fn add(self, rhs: Self) -> Self::Output {
         Self::new(self.a1 + rhs.a1, self.a2 + rhs.a2, self.a3 + rhs.a3)
     }
 }
 
-/// Divide a vector by a scalar, resulting in another scaled vector.
 impl<T> Div<T> for Vector3<T>
 where
     T: Div<Output = T> + Copy,
 {
     type Output = Self;
 
+    /// Divide a vector by a scalar, resulting in another scaled vector.
     #[inline]
     fn div(self, rhs: T) -> Self::Output {
         Self::new(self.a1 / rhs, self.a2 / rhs, self.a3 / rhs)
     }
 }
 
-/// Multiply a vector by a scalar, resulting in another scaled vector.
 impl<T> Mul<T> for Vector3<T>
 where
     T: Mul<Output = T> + Copy,
 {
     type Output = Self;
 
+    /// Multiply a vector by a scalar, resulting in another scaled vector.
     #[inline]
     fn mul(self, rhs: T) -> Self::Output {
         Self::new(self.a1 * rhs, self.a2 * rhs, self.a3 * rhs)
     }
 }
 
-/// Multiply two vectors via the geometric product, producing a multivector
-/// with a scalar (grade-0) part and a bivector (grade-2) part, a.k.a a rotor.
 impl<T> Mul for Vector3<T>
 where
     T: Add<Output = T> + Mul<Output = T> + Sub<Output = T> + Copy,
 {
     type Output = Rotor3<T>;
 
+    /// Multiply two vectors via the geometric product, producing a multivector
+    /// with a scalar (grade-0) part and a bivector (grade-2) part, a.k.a a rotor.
     fn mul(self, rhs: Self) -> Self::Output {
         Rotor3::new(self.dot(rhs), self.wedge(rhs))
     }
 }
 
-/// Multiply a vector and a bivector via the geometric product, producing a
-/// multivector with a vector (grade-1) part and a trivector (grade-3) part.
 impl<T> Mul<Bivector3<T>> for Vector3<T>
 where
     T: Add<Output = T> + Mul<Output = T> + Neg<Output = T> + Sub<Output = T> + Copy,
 {
     type Output = (Vector3<T>, Trivector3<T>);
 
+    /// Multiply a vector and a bivector via the geometric product, producing a
+    /// multivector with a vector (grade-1) part and a trivector (grade-3) part.
+    ///
     /// Multiplying a vector `a` and a bivector `B` results in a multivector with
     /// a grade-1 (vector) part `<aB>₁` and a grade-3 (trivector) part `<aB>₃`.
     #[inline]
@@ -227,37 +233,37 @@ where
     }
 }
 
-/// Negate a vector, resulting in another vector that is oriented in the opposite
-/// direction.
 impl<T> Neg for Vector3<T>
 where
     T: Neg<Output = T>,
 {
     type Output = Self;
 
+    /// Negate a vector, resulting in another vector that is oriented in the opposite
+    /// direction.
     fn neg(self) -> Self::Output {
         Self::new(-self.a1, -self.a2, -self.a3)
     }
 }
 
-/// Subtract two vectors, resulting in another vector.
 impl<T> Sub for Vector3<T>
 where
     T: Sub<Output = T>,
 {
     type Output = Self;
 
+    /// Subtract two vectors, resulting in another vector.
     #[inline]
     fn sub(self, rhs: Self) -> Self::Output {
         Self::new(self.a1 - rhs.a1, self.a2 - rhs.a2, self.a3 - rhs.a3)
     }
 }
 
-/// Zero vector.
 impl<T> Zero for Vector3<T>
 where
     T: Zero,
 {
+    /// Zero vector.
     #[inline]
     fn zero() -> Self {
         Self::new(Zero::zero(), Zero::zero(), Zero::zero())
@@ -341,13 +347,13 @@ mod tests {
     }
 
     #[test]
-    fn outer_product() {
+    fn wedge() {
         // `u` and `v` are the same, so `u^v` should return the zero bivector
         let u = Vector3::new(0.0, 1.0, 2.0);
         let v = Vector3::new(0.0, 1.0, 2.0);
         let res_0 = u.wedge(v);
         let res_1 = v.wedge(u);
-        println!("Testing vector outer product with parallel vectors...");
+        println!("Testing vector wedge product with parallel vectors...");
         println!("\tu^v = {:?}", res_0);
         println!("\tv^u = {:?}", res_1);
         approx::assert_ulps_eq!(res_0, Bivector3::zero());
@@ -357,7 +363,7 @@ mod tests {
         let v = Vector3::new(0.0, 1.0, 0.0);
         let res_0 = u.wedge(v);
         let res_1 = v.wedge(u);
-        println!("Testing vector outer product with orthogonal vectors...");
+        println!("Testing vector wedge product with orthogonal vectors...");
         println!("\tu^v = {:?}", res_0);
         println!("\tv^u = {:?}", res_1);
         approx::assert_ulps_eq!(res_0, Bivector3::new(1.0, 0.0, 0.0));
@@ -377,7 +383,7 @@ mod tests {
         let uv = u * v;
         let vu = v * u;
         let rotor = Rotor3::new(uv.scalar - vu.scalar, uv.bivector - vu.bivector) * 0.5;
-        println!("Testing vector outer product and its relation to the geometric product...");
+        println!("Testing vector wedge product and its relation to the geometric product...");
         println!("\tu^v = {:?}", res);
         println!("\t½(uv - vu) = {:?}", rotor);
         approx::assert_ulps_eq!(0.0, rotor.scalar);
@@ -385,7 +391,7 @@ mod tests {
     }
 
     #[test]
-    fn inner_product() {
+    fn dot() {
         // Take the dot product between the two vectors `u` and `v`
         let u = Vector3::new(0.0, 1.0, 2.0);
         let v = Vector3::new(3.0, 4.0, 5.0);
@@ -401,7 +407,7 @@ mod tests {
         let uv = u * v;
         let vu = v * u;
         let rotor = Rotor3::new(uv.scalar + vu.scalar, uv.bivector + vu.bivector) * 0.5;
-        println!("Testing vector inner product and its relation to the geometric product...");
+        println!("Testing vector dot product and its relation to the geometric product...");
         println!("\tu•v = {:?}", res);
         println!("\t½(uv + vu) = {:?}", rotor);
         approx::assert_ulps_eq!(res, 14.0);

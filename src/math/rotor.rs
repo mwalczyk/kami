@@ -1,6 +1,7 @@
 use std::ops::{Add, Div, Mul, Neg, Sub};
 
 use crate::math::bivector::Bivector3;
+use crate::math::space::{Contraction, Exterior};
 use crate::math::vector::Vector3;
 
 use num_traits::{Float, One, Zero};
