@@ -3,7 +3,7 @@ use crate::math::space::{Exterior, Norm};
 /// An enum representing the orientation of a `k`-blade. This has different
 /// meanings depending on the grade of the blade. For example:
 ///
-///     0-blades (scalars): positive or negative (sign)
+///     0-blades (scalars): or "oriented magnitude": positive or negative (sign)
 ///     1-blades (vectors) or "oriented length": positive or negative (direction)
 ///     2-blades (bivectors) or "oriented areas": clockwise or counterclockwise
 ///     3-blades (trivectors) or "oriented volumes": right-handed or left-handed

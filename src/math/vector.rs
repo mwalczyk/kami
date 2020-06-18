@@ -1,4 +1,4 @@
-use std::ops::{Add, Div, Mul, Neg, Sub};
+use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 
 use crate::math::bivector::Bivector3;
 use crate::math::rotor::Rotor3;
@@ -6,16 +6,17 @@ use crate::math::space::{Contraction, Exterior, Norm};
 use crate::math::trivector::Trivector3;
 
 use num_traits::{Float, One, Zero};
+use std::fmt::Debug;
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub struct Vector3<T> {
-    /// 1st component, corresponding to basis vector `x` i.e. `e₁`
+    /// 1st component, corresponding to basis vector `e₁`, i.e. the positive `x`-axis
     pub a1: T,
 
-    /// 2nd component, corresponding to basis vector `y` i.e. `e₂`
+    /// 2nd component, corresponding to basis vector `e₂`, i.e. the positive `y`-axis
     pub a2: T,
 
-    /// 3rd component, corresponding to basis vector `z` i.e. `e₃`
+    /// 3rd component, corresponding to basis vector `e₃`, i.e. the positive `z`-axis
     pub a3: T,
 }
 
@@ -52,9 +53,10 @@ where
 {
     type Output = T;
 
-    /// Also known as the "dot product," the inner product is a measure of
+    /// Also known as the "inner product," the dot product is a measure of
     /// similarity between two vectors. It takes as input two vectors `u`
-    /// and `v` and returns a scalar, i.e. a grade-0 object.
+    /// and `v` and returns a scalar, i.e. a grade-0 object. This is the
+    /// contraction of a vector with itself.
     #[inline]
     fn dot(self, rhs: Self) -> Self::Output {
         self.a1 * rhs.a1 + self.a2 * rhs.a2 + self.a3 * rhs.a3
@@ -68,7 +70,7 @@ where
     type Output = Bivector3<T>;
 
     /// Constructs a bivector from a pair of vectors in R3 via the outer
-    /// (wedge) product: `u^v`. Here, `self` is `u` and `rhs` is `v`.
+    /// (wedge) product: `u^v`.
     ///
     /// Note that the resulting bivector is expressed in terms of the
     /// three basis bivectors `x^y`, `x^z`, and `y^z`. These are
@@ -99,9 +101,7 @@ where
 {
     type Scalar = T;
 
-    /// Compute the length of a vector `u`: note that a square root
-    /// operation is required, and thus, this function only works
-    /// for floats.
+    /// Compute the (absolute value of the) length of the vector `u`.
     #[inline]
     fn norm(self) -> Self::Scalar {
         self.norm_squared().sqrt()
@@ -113,23 +113,24 @@ where
         self.dot(self)
     }
 
-    /// Returns a normalized version of the vector.
+    /// Returns a normalized version of the vector, i.e. a vector with the
+    /// same orientation and attitude but unit length.
     #[inline]
     fn normalize(self) -> Self {
         self / self.norm()
+    }
+
+    /// The inverse of the vector under the geometric product.
+    #[inline]
+    fn inverse(self) -> Self {
+        self / self.norm_squared()
     }
 }
 
 impl<T> Vector3<T>
 where
-    T: Add<Output = T> + Div<Output = T> + Mul<Output = T> + Copy + Float,
+    T: Add<Output = T> + Mul<Output = T> + Debug + Copy + Float,
 {
-    /// The inverse of the vector under the geometric product.
-    #[inline]
-    pub fn inverse(self) -> Self {
-        self / self.norm_squared()
-    }
-
     /// Returns the projection of `u` onto `v`, using the dot product
     /// and the geometric inverse of `v`.
     #[inline]
@@ -139,19 +140,24 @@ where
         rhs.inverse() * self.dot(rhs)
     }
 
-    // Returns the reflection of `u` about `v`. The geometric algebra version of
-    // this problem involves 2 geometric products: `u' = v⁻¹uv`. In general,
-    // this sequence of operations will either produce a vector or a trivector.
-    // However, the trivector case only occurs when the 3 vectors are linearly
-    // independent, which is obviously not the case with the reflection formula
-    // listed above. See the footnotes of https://marctenbosch.com/quaternions/
-    // for details.
-    // fn reflect(self, rhs: Self) -> Self
-    // where
-    //     T: Div<Output = T> + Add<Output = T> + Copy + Mul<Output = T> + Sub<Output = T>,
-    // {
-    //     let (scalar, bivector) = rhs.inverse() * self;
-    // }
+    /// Returns the reflection of `u` about `v`. The geometric algebra version of
+    /// this problem involves 2 geometric products: `u' = v⁻¹uv`. In general,
+    /// this sequence of operations will either produce a vector or a trivector.
+    /// However, the trivector case only occurs when the 3 vectors are linearly
+    /// independent, which is obviously not the case with the reflection formula
+    /// listed above. See the footnotes of https://marctenbosch.com/quaternions/
+    /// for details.
+    pub fn reflect(self, rhs: Self) -> Self
+    where
+        T: Div<Output = T> + Add<Output = T> + Copy + Mul<Output = T> + Sub<Output = T>,
+    {
+        // The trivector part should always be 0
+        let rotor = rhs.inverse() * self;
+        let (vector, trivector) = rotor * rhs;
+        println!("{:?}", trivector);
+
+        vector
+    }
 }
 
 impl<T> Add for Vector3<T>
@@ -164,6 +170,19 @@ where
     #[inline]
     fn add(self, rhs: Self) -> Self::Output {
         Self::new(self.a1 + rhs.a1, self.a2 + rhs.a2, self.a3 + rhs.a3)
+    }
+}
+
+impl<T> AddAssign for Vector3<T>
+where
+    T: AddAssign,
+{
+    /// Add a vector to this vector.
+    #[inline]
+    fn add_assign(&mut self, rhs: Self) {
+        self.a1 += rhs.a1;
+        self.a2 += rhs.a2;
+        self.a3 += rhs.a3;
     }
 }
 
@@ -180,16 +199,16 @@ where
     }
 }
 
-impl<T> Mul<T> for Vector3<T>
+impl<T> DivAssign<T> for Vector3<T>
 where
-    T: Mul<Output = T> + Copy,
+    T: DivAssign + Copy,
 {
-    type Output = Self;
-
-    /// Multiply a vector by a scalar, resulting in another scaled vector.
+    /// Divide this vector by a scalar.
     #[inline]
-    fn mul(self, rhs: T) -> Self::Output {
-        Self::new(self.a1 * rhs, self.a2 * rhs, self.a3 * rhs)
+    fn div_assign(&mut self, rhs: T) {
+        self.a1 /= rhs;
+        self.a2 /= rhs;
+        self.a3 /= rhs;
     }
 }
 
@@ -203,6 +222,32 @@ where
     /// with a scalar (grade-0) part and a bivector (grade-2) part, a.k.a a rotor.
     fn mul(self, rhs: Self) -> Self::Output {
         Rotor3::new(self.dot(rhs), self.wedge(rhs))
+    }
+}
+
+impl<T> Mul<T> for Vector3<T>
+where
+    T: Mul<Output = T> + Copy,
+{
+    type Output = Self;
+
+    /// Multiply a vector by a scalar, resulting in another scaled vector.
+    #[inline]
+    fn mul(self, rhs: T) -> Self::Output {
+        Self::new(self.a1 * rhs, self.a2 * rhs, self.a3 * rhs)
+    }
+}
+
+impl<T> MulAssign<T> for Vector3<T>
+where
+    T: MulAssign + Copy,
+{
+    /// Multiply this vector by a scalar.
+    #[inline]
+    fn mul_assign(&mut self, rhs: T) {
+        self.a1 *= rhs;
+        self.a2 *= rhs;
+        self.a3 *= rhs;
     }
 }
 
@@ -256,6 +301,19 @@ where
     #[inline]
     fn sub(self, rhs: Self) -> Self::Output {
         Self::new(self.a1 - rhs.a1, self.a2 - rhs.a2, self.a3 - rhs.a3)
+    }
+}
+
+impl<T> SubAssign for Vector3<T>
+where
+    T: SubAssign,
+{
+    /// Subtract a vector from this vector.
+    #[inline]
+    fn sub_assign(&mut self, rhs: Self) {
+        self.a1 -= rhs.a1;
+        self.a2 -= rhs.a2;
+        self.a3 -= rhs.a3;
     }
 }
 
@@ -359,6 +417,8 @@ mod tests {
         approx::assert_ulps_eq!(res_0, Bivector3::zero());
         approx::assert_ulps_eq!(res_1, Bivector3::zero());
 
+        // `u` and `v` are orthonormal to each other, so `u^v` should return a unit
+        // bivector in one of the basis planes
         let u = Vector3::new(1.0, 0.0, 0.0);
         let v = Vector3::new(0.0, 1.0, 0.0);
         let res_0 = u.wedge(v);
@@ -382,7 +442,7 @@ mod tests {
         // These are rotors that we can add component-wise
         let uv = u * v;
         let vu = v * u;
-        let rotor = Rotor3::new(uv.scalar - vu.scalar, uv.bivector - vu.bivector) * 0.5;
+        let rotor = (uv - vu) * 0.5;
         println!("Testing vector wedge product and its relation to the geometric product...");
         println!("\tu^v = {:?}", res);
         println!("\t½(uv - vu) = {:?}", rotor);
@@ -406,7 +466,7 @@ mod tests {
         // These are rotors that we can add component-wise
         let uv = u * v;
         let vu = v * u;
-        let rotor = Rotor3::new(uv.scalar + vu.scalar, uv.bivector + vu.bivector) * 0.5;
+        let rotor = (uv + vu) * 0.5;
         println!("Testing vector dot product and its relation to the geometric product...");
         println!("\tu•v = {:?}", res);
         println!("\t½(uv + vu) = {:?}", rotor);
@@ -436,5 +496,31 @@ mod tests {
         println!("Testing vector projection...");
         println!("\t{:?}", res);
         approx::assert_ulps_eq!(res, Vector3::new(1.0, 0.0, 0.0));
+    }
+
+    #[test]
+    fn reflect() {
+        let u = Vector3::<f32>::unit_x();
+        let v = Vector3::unit_y();
+        let res = u.reflect(v);
+        println!("Testing vector reflection with basis vectors...");
+        println!("\tReflected vector: {:?}", res);
+
+        // Reflect `u` through `v` using the geometric algebra approach
+        let u = Vector3::new(0.0, 1.0, 2.0);
+        let v = Vector3::new(3.0, 4.0, 5.0);
+        let res = u.reflect(v);
+
+        // Reflect `u` through `v` using the "traditional" linear algebra approach: `2(v•u)v - u`,
+        // where the vector `v` *must* be normalized
+        //
+        // Reference: https://www.fabrizioduroni.it/2017/08/25/how-to-calculate-reflection-vector.html
+        let v_normalized = v.normalize();
+        let traditional = v_normalized * (2.0 * u.dot(v_normalized)) - u;
+        println!("Testing vector reflection with arbitrary vectors...");
+        println!("\tReflected vector: {:?}", res);
+        println!("\tVia traditional formula (non-GA): {:?}", traditional);
+        approx::assert_ulps_eq!(res, traditional, max_ulps = 6);
+        approx::assert_ulps_eq!(res, Vector3::new(42.0 / 25.0, 31.0 / 25.0, 4.0 / 5.0));
     }
 }
