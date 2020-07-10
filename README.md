@@ -4,6 +4,16 @@
 
 🦢 A (very) W.I.P. library for computational origami.
 
+## Description
+
+After studying computational origami for the last 6-8 months and making a variety of rather disjoint projects, I am working towards creating a unified codebase for future origami work. Pretty much all of the ideas here are taken from Robert Lang's books, _Twists, Tilings, and Tessellations_ and/or _Origami Design Secrets_, so I claim no ownership over any of these ideas. 
+
+Initially, I set out to build this library using geometric (or Clifford) algebra: a unified mathematical framework that includes "traditional" linear algebra, quaternions, complex numbers, and many other mathematical phenomena, all in one "package." This is still a goal of mine, but for now, I've decided to focus on some of the other higher-level functionality, deferring to the already wonderful `nalgebra` library for basic mathematical operations.
+
+Because the Rust GUI story isn't great yet (although several libraries, like `Iced` and `Druid` are getting there), I've opted to create visualizations using the browser. This pretty straightforward with WASM and the `websys` crate. Regardless, this library is meant to be used _within_ other projects that have a graphical interface - it isn't a front-end application itself. 
+
+I'm using Rust because of its awesome type / ownership system, tooling, and community. 
+
 ## References
 
 - Geometric Algebra
