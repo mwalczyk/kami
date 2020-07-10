@@ -255,6 +255,7 @@ where
     /// Negate a bivector, resulting in another bivector that is oriented in the opposite
     /// direction. The negation (or reversal) of a bivector formed by `u^v` is simply
     /// `v^u`.
+    #[inline]
     fn neg(self) -> Self::Output {
         Self::new(-self.b1, -self.b2, -self.b3)
     }

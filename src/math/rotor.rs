@@ -121,8 +121,8 @@ where
 }
 
 impl<T> Norm for Rotor3<T>
-    where
-        T: Add<Output = T> + Mul<Output = T> + Neg<Output = T> + Copy + Float,
+where
+    T: Add<Output = T> + Mul<Output = T> + Neg<Output = T> + Copy + Float,
 {
     type Scalar = T;
 
@@ -340,6 +340,21 @@ where
     }
 }
 
+impl<T> Neg for Rotor3<T>
+where
+    T: Neg<Output = T>,
+{
+    type Output = Self;
+
+    /// Negate a rotor, resulting in another rotor that has negated scalar and
+    /// bivector components. Note that in most cases, the `inverse()` function
+    /// should be used. Negating a rotor produces a different result.
+    #[inline]
+    fn neg(self) -> Self::Output {
+        Self::new(-self.scalar, -self.bivector)
+    }
+}
+
 impl<T> Sub for Rotor3<T>
 where
     T: Sub<Output = T>,
@@ -417,11 +432,11 @@ mod tests {
     #[test]
     fn identity() {
         let x = Vector3::<f32>::unit_x();
-        let rotor = Rotor3::identity();
-        let x_prime = rotor.rotate(x);
+        let r = Rotor3::identity();
+        let x_prime = r.rotate(x);
         println!("Testing rotor identity...");
-        println!("\tRotor: {:?}", rotor);
-        println!("\tRotated vector: {:?}", x_prime);
+        println!("\tR = {:?}", r);
+        println!("\tx': {:?}", x_prime);
         approx::assert_ulps_eq!(x_prime, Vector3::unit_x());
     }
 
@@ -460,10 +475,10 @@ mod tests {
         let x_2_prime = rotor.rotate(x_2);
 
         println!("Testing rotor rotation (basic)...");
-        println!("\tRotor: {:?}", rotor);
-        println!("\tRotated vector #0: {:?}", x_0_prime);
-        println!("\tRotated vector #1: {:?}", x_1_prime);
-        println!("\tRotated vector #2: {:?}", x_2_prime);
+        println!("\tR = {:?}", rotor);
+        println!("\tx₀' = {:?}", x_0_prime);
+        println!("\tx₁' = {:?}", x_1_prime);
+        println!("\tx₂' = {:?}", x_2_prime);
 
         // Should be mapped to the positive y-axis
         approx::assert_ulps_eq!(x_0_prime, Vector3::new(0.0, 1.0, 0.0));
@@ -482,10 +497,10 @@ mod tests {
         let x_2_prime = rotor.rotate(x_2);
 
         println!("Testing rotor rotation (angle + plane)...");
-        println!("\tRotor: {:?}", rotor);
-        println!("\tRotated vector #0: {:?}", x_0_prime);
-        println!("\tRotated vector #1: {:?}", x_1_prime);
-        println!("\tRotated vector #2: {:?}", x_2_prime);
+        println!("\tR = {:?}", rotor);
+        println!("\tx₀' = {:?}", x_0_prime);
+        println!("\tx₁' = {:?}", x_1_prime);
+        println!("\tx₂' = {:?}", x_2_prime);
 
         // Should be mapped to the positive x-axis (i.e. the rotation should have no effect)
         approx::assert_ulps_eq!(x_0_prime, Vector3::new(1.0, 0.0, 0.0));
@@ -507,6 +522,9 @@ mod tests {
         let r = Rotor3::from_vectors(u, v);
 
         println!("Rotor norm squared: {:?}", r.norm_squared());
-        println!("Rotor norm squared (via dot product: {:?}", r.scalar*r.scalar + r.bivector.norm_squared());
+        println!(
+            "Rotor norm squared (via dot product: {:?}",
+            r.scalar * r.scalar + r.bivector.norm_squared()
+        );
     }
 }

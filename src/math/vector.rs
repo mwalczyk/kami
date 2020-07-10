@@ -1,3 +1,4 @@
+use std::fmt::Debug;
 use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 
 use crate::math::bivector::Bivector3;
@@ -6,7 +7,6 @@ use crate::math::space::{Contraction, Exterior, Norm};
 use crate::math::trivector::Trivector3;
 
 use num_traits::{Float, One, Zero};
-use std::fmt::Debug;
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub struct Vector3<T> {
@@ -129,6 +129,20 @@ where
 
 impl<T> Vector3<T>
 where
+    T: Float,
+{
+    /// Calculates the angle between two vectors. If `u` and `v` are unit
+    /// vectors, then the angle between them is simply `cosθ = u•v`.
+    #[inline]
+    pub fn angle(self, rhs: Self) -> T {
+        let u_norm = self.normalize();
+        let v_norm = rhs.normalize();
+        u_norm.dot(v_norm).acos()
+    }
+}
+
+impl<T> Vector3<T>
+where
     T: Add<Output = T> + Mul<Output = T> + Debug + Copy + Float,
 {
     /// Returns the projection of `u` onto `v`, using the dot product
@@ -154,7 +168,7 @@ where
         // The trivector part should always be 0
         let rotor = rhs.inverse() * self;
         let (vector, trivector) = rotor * rhs;
-        println!("{:?}", trivector);
+        //println!("{:?}", trivector);
 
         vector
     }
@@ -257,11 +271,9 @@ where
 {
     type Output = (Vector3<T>, Trivector3<T>);
 
-    /// Multiply a vector and a bivector via the geometric product, producing a
-    /// multivector with a vector (grade-1) part and a trivector (grade-3) part.
-    ///
-    /// Multiplying a vector `a` and a bivector `B` results in a multivector with
-    /// a grade-1 (vector) part `<aB>₁` and a grade-3 (trivector) part `<aB>₃`.
+    /// Multiply a vector and a bivector via the geometric product, resulting in
+    /// a multivector with a grade-1 (vector) part `<aB>₁` and a grade-3 (trivector)
+    /// part `<aB>₃`.
     #[inline]
     fn mul(self, rhs: Bivector3<T>) -> Self::Output {
         // The vector (grade_1) part
@@ -385,23 +397,28 @@ mod tests {
     use super::*;
 
     #[test]
-    fn add() {
+    fn dot() {
+        // Take the dot product between the two vectors `u` and `v`
         let u = Vector3::new(0.0, 1.0, 2.0);
         let v = Vector3::new(3.0, 4.0, 5.0);
-        let res = u + v;
-        println!("Testing vector addition...");
-        println!("\tu + v = {:?}", res);
-        approx::assert_ulps_eq!(res, Vector3::new(3.0, 5.0, 7.0));
-    }
+        let res = u.dot(v);
 
-    #[test]
-    fn sub() {
-        let u = Vector3::new(0.0, 1.0, 2.0);
-        let v = Vector3::new(3.0, 4.0, 5.0);
-        let res = u - v;
-        println!("Testing vector subtraction...");
-        println!("\tu - v = {:?}", res);
-        approx::assert_ulps_eq!(res, Vector3::new(-3.0, -3.0, -3.0));
+        // The inner (dot) product and outer (wedge) product are subsidiary
+        // operations, related to the geometric product as follows:
+        //
+        // u•v = ½(uv + vu)
+        // u^v = ½(uv - vu)
+        //
+        // These are rotors that we can add component-wise
+        let uv = u * v;
+        let vu = v * u;
+        let rotor = (uv + vu) * 0.5;
+        println!("Testing vector dot product and its relation to the geometric product...");
+        println!("\tu•v = {:?}", res);
+        println!("\t½(uv + vu) = {:?}", rotor);
+        approx::assert_ulps_eq!(res, 14.0);
+        approx::assert_ulps_eq!(res, rotor.scalar);
+        approx::assert_ulps_eq!(rotor.bivector, Bivector3::zero());
     }
 
     #[test]
@@ -451,31 +468,6 @@ mod tests {
     }
 
     #[test]
-    fn dot() {
-        // Take the dot product between the two vectors `u` and `v`
-        let u = Vector3::new(0.0, 1.0, 2.0);
-        let v = Vector3::new(3.0, 4.0, 5.0);
-        let res = u.dot(v);
-
-        // The inner (dot) product and outer (wedge) product are subsidiary
-        // operations, related to the geometric product as follows:
-        //
-        // u•v = ½(uv + vu)
-        // u^v = ½(uv - vu)
-        //
-        // These are rotors that we can add component-wise
-        let uv = u * v;
-        let vu = v * u;
-        let rotor = (uv + vu) * 0.5;
-        println!("Testing vector dot product and its relation to the geometric product...");
-        println!("\tu•v = {:?}", res);
-        println!("\t½(uv + vu) = {:?}", rotor);
-        approx::assert_ulps_eq!(res, 14.0);
-        approx::assert_ulps_eq!(res, rotor.scalar);
-        approx::assert_ulps_eq!(rotor.bivector, Bivector3::zero());
-    }
-
-    #[test]
     fn inverse() {
         // For any vector `u`, taking the geometric product of `u⁻¹` and `u`
         // should be 1 (a scalar with no bivector part)
@@ -486,6 +478,16 @@ mod tests {
         println!("\tu⁻¹u = {:?}", res);
         approx::assert_ulps_eq!(res.scalar, 1.0);
         approx::assert_ulps_eq!(res.bivector, Bivector3::zero());
+    }
+
+    #[test]
+    fn angle() {
+        let u = Vector3::new(0.0, 1.0, 2.0);
+        let v = Vector3::new(3.0, 4.0, 5.0);
+        let res = u.angle(v);
+        println!("Testing vector angle...");
+        println!("\tAngle between u and v: {:?}", res);
+        approx::assert_ulps_eq!(res, ((7.0 * 10.0.sqrt()) / 25.0).acos(), max_ulps = 8);
     }
 
     #[test]
@@ -522,5 +524,25 @@ mod tests {
         println!("\tVia traditional formula (non-GA): {:?}", traditional);
         approx::assert_ulps_eq!(res, traditional, max_ulps = 6);
         approx::assert_ulps_eq!(res, Vector3::new(42.0 / 25.0, 31.0 / 25.0, 4.0 / 5.0));
+    }
+
+    #[test]
+    fn add() {
+        let u = Vector3::new(0.0, 1.0, 2.0);
+        let v = Vector3::new(3.0, 4.0, 5.0);
+        let res = u + v;
+        println!("Testing vector addition...");
+        println!("\tu + v = {:?}", res);
+        approx::assert_ulps_eq!(res, Vector3::new(3.0, 5.0, 7.0));
+    }
+
+    #[test]
+    fn sub() {
+        let u = Vector3::new(0.0, 1.0, 2.0);
+        let v = Vector3::new(3.0, 4.0, 5.0);
+        let res = u - v;
+        println!("Testing vector subtraction...");
+        println!("\tu - v = {:?}", res);
+        approx::assert_ulps_eq!(res, Vector3::new(-3.0, -3.0, -3.0));
     }
 }

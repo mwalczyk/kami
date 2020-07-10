@@ -30,6 +30,12 @@ See the following [playlist](https://www.youtube.com/playlist?list=PLpzmRsG7u_gq
 - [Getting Started](https://dev.to/sendilkumarn/rust-and-webassembly-for-the-masses-wasm-pack-3d6p)
 - [Yew](https://yew.rs/docs/)
 
+
+### Graph Data Structures in Rust 
+- [Graphlib](https://github.com/purpleprotocol/graphlib)
+- [Modeling Graphs in Rust Using Indices](http://smallcultfollowing.com/babysteps/blog/2015/04/06/modeling-graphs-in-rust-using-vector-indices/)
+- [Petgraph](https://github.com/petgraph/petgraph)
+
 ## Roadmap
 
 - Math
