@@ -6,13 +6,19 @@
 
 ## Description
 
-After studying computational origami for the last 6-8 months and making a variety of rather disjoint projects, I am working towards creating a unified codebase for future origami work. Pretty much all of the ideas here are taken from Robert Lang's books, _Twists, Tilings, and Tessellations_ and/or _Origami Design Secrets_, so I claim no ownership over any of these ideas. 
+After studying computational origami for the last 6-8 months and making a variety of rather disjoint projects, I am working towards creating a unified codebase for future origami work. This is *very* much a work-in-progress, and it will be a few months before the library is even remotely usable. It's my hope that this repo becomes a sort of "diary" / "scratch pad" for future studies: I will add more robustness and functionality as I continue to learn more about origami design, kinematics, and computational geometry. Pretty much all of the ideas here are taken from Robert Lang's books, _Twists, Tilings, and Tessellations_ and/or _Origami Design Secrets_, so I claim no ownership over any of this knowledge. 
 
 Initially, I set out to build this library using geometric (or Clifford) algebra: a unified mathematical framework that includes "traditional" linear algebra, quaternions, complex numbers, and many other mathematical phenomena, all in one "package." This is still a goal of mine, but for now, I've decided to focus on some of the other higher-level functionality, deferring to the already wonderful `nalgebra` library for basic mathematical operations.
 
 Because the Rust GUI story isn't great yet (although several libraries, like `Iced` and `Druid` are getting there), I've opted to create visualizations using the browser. This pretty straightforward with WASM and the `websys` crate. Regardless, this library is meant to be used _within_ other projects that have a graphical interface - it isn't a front-end application itself. 
 
-I'm using Rust because of its awesome type / ownership system, tooling, and community. 
+In other words, you would use this library internally to build things like:
+- A crease pattern editor
+- A tessellation generator
+- Algorithmic origami designs
+- Rigid origami simulations
+
+I'm using Rust because of its awesome type / ownership system, tooling, and community 🦀. 
 
 ## References
 
