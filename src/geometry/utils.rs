@@ -26,6 +26,7 @@ pub fn calculate_triangle_incenter(a: &Vec2, b: &Vec2, c: &Vec2) -> Option<Vec2>
     let side_b = nalgebra_glm::distance(a, c);
     let side_c = nalgebra_glm::distance(a, b);
     let inv_p = 1.0 / (side_a + side_b + side_c);
+
     let incenter = Vec2::new(
         (side_a * a.x + side_b * b.x + side_c * c.x) * inv_p,
         (side_a * a.y + side_b * b.y + side_c * c.y) * inv_p,

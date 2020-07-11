@@ -6,34 +6,9 @@ edition = "2018"
 
 [lib]
 name = "kami"
-path = "src/lib.rs"
-crate-type = ["cdylib"]
-
-[[bin]]
-name = "kami"
-path = "src/main.rs"
+crate-type = ["lib"]
 
 [dependencies]
 approx = "0.3.2"
 nalgebra-glm = "0.7.0"
 num-traits = "0.2"
-wasm-bindgen = "0.2.64"
-
-[dependencies.web-sys]
-web-sys = "0.3.41"
-features = [
-    "Attr",
-    "CanvasRenderingContext2d",
-    "CssStyleDeclaration",
-    "Document",
-    "Element",
-    "Event",
-    "EventTarget",
-    "HtmlCanvasElement",
-    "HtmlElement",
-    "HtmlInputElement",
-    "Node",
-    "SvgElement",
-    "Text",
-    "Window"
-]
