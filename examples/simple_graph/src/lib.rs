@@ -1,3 +1,5 @@
+mod shared;
+
 use kami::glm::Vec2;
 use kami::graph::planar_graph::PlanarGraph;
 
@@ -6,6 +8,8 @@ use wasm_bindgen::JsCast;
 
 #[wasm_bindgen]
 pub fn run() -> Result<(), JsValue> {
+    shared::set_panic_hook();
+
     // Grab references to the HTML document, etc.
     let window = web_sys::window().unwrap();
     let document = window.document().unwrap();
@@ -17,17 +21,15 @@ pub fn run() -> Result<(), JsValue> {
     body.append_child(&heading)?;
 
     // Create the main SVG element
-    let svg = document
-        .create_element_ns(Some("http://www.w3.org/2000/svg"), "svg")?
-        .dyn_into::<web_sys::SvgElement>()?;
-    svg.style().set_property("border", "solid")?;
-    svg.set_attribute("width", "500")?;
-    svg.set_attribute("height", "500")?;
-    svg.set_attribute("viewBox", "0 0 500 500")?;
+    let w = 500.0f32;
+    let h = 500.0f32;
+    let svg = shared::svg_main(&document, w, h).unwrap();
     body.append_child(&svg)?;
 
     // Per-example drawing / additions
-    draw(&document, &body, &svg)?;
+    draw(&document, &body, &svg, w, h)?;
+
+    web_sys::console::log_1(&"Finished drawing".into());
 
     Ok(())
 }
@@ -36,14 +38,26 @@ pub fn draw(
     document: &web_sys::Document,
     body: &web_sys::HtmlElement,
     svg: &web_sys::SvgElement,
+    w: f32,
+    h: f32,
 ) -> Result<(), JsValue> {
     // Construct a simple graph
     let mut graph: PlanarGraph<(), ()> = PlanarGraph::new();
-    graph.add_node(&Vec2::new(50.0, 100.0), ());
-    graph.add_node(&Vec2::new(50.0, 200.0), ());
-    graph.add_node(&Vec2::new(50.0, 300.0), ());
-
+    graph.add_node(&Vec2::new(100.0, 100.0), ());
+    graph.add_node(&Vec2::new(200.0, 100.0), ());
+    graph.add_node(&Vec2::new(150.0, 50.0), ());
+    graph.add_node(&Vec2::new(150.0, 150.0), ());
     graph.add_edge(0, 1, ());
+    graph.add_edge(2, 3, ());
+
+    // Create a new text element that tells us some basic info about this graph
+    let graph_stats = document.create_element("p")?;
+    graph_stats.set_inner_html(&format!(
+        "Graph has {} edges and {} nodes",
+        graph.edge_count(),
+        graph.node_count()
+    ));
+    body.append_child(&graph_stats)?;
 
     // Append a new text element to the body that will tell us which node we have clicked
     let clicked = document.create_element("p")?;
@@ -62,16 +76,14 @@ pub fn draw(
             p.set_inner_html(&format!("Node {}", i));
         }) as Box<dyn FnMut()>);
 
-        let element = document.create_element_ns(Some("http://www.w3.org/2000/svg"), "circle")?;
-        element.set_attribute("cx", &node.get_position().x.to_string())?;
-        element.set_attribute("cy", &node.get_position().y.to_string())?;
-        element.set_attribute("r", "20")?;
-        element.set_attribute("stroke", "black")?;
-        element.set_attribute("fill", "red")?;
+        let element = shared::svg_circle(&document, &node.get_position(), 5.0, "green", "black").unwrap();
         element
             .dyn_ref::<web_sys::SvgElement>()
             .expect("Could not cast to SvgElement type")
             .set_onclick(Some(callback.as_ref().unchecked_ref()));
+
+        let title = shared::svg_title(&document, &format!("Node {}", i)).unwrap();
+        element.append_child(&title);
 
         svg.append_child(&element)?;
 
@@ -85,12 +97,13 @@ pub fn draw(
         let src_vertex = graph.get_vertex(src).unwrap();
         let dst_vertex = graph.get_vertex(dst).unwrap();
 
-        let element = document.create_element_ns(Some("http://www.w3.org/2000/svg"), "line")?;
-        element.set_attribute("x1", &src_vertex.get_position().x.to_string())?;
-        element.set_attribute("y1", &src_vertex.get_position().y.to_string())?;
-        element.set_attribute("x2", &dst_vertex.get_position().x.to_string())?;
-        element.set_attribute("y2", &dst_vertex.get_position().y.to_string())?;
-        element.set_attribute("stroke", "black")?;
+        let element = shared::svg_line(
+            &document,
+            src_vertex.get_position(),
+            dst_vertex.get_position(),
+            "black",
+        )
+        .unwrap();
 
         svg.append_child(&element)?;
     }

@@ -2,9 +2,9 @@ use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssi
 
 use crate::math::bivector::Bivector3;
 use crate::math::space::{Contraction, Exterior, Norm};
+use crate::math::trivector::Trivector3;
 use crate::math::vector::Vector3;
 
-use crate::math::trivector::Trivector3;
 use num_traits::{Float, One, Zero};
 
 /// A rotor is the composition of a scalar, grade-0 object and a bivector,

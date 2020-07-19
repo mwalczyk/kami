@@ -144,6 +144,7 @@ Keeping track of interesting articles, ideas, blogs, and books:
   - [Generics vs. Associated Types in Rust](https://stackoverflow.com/questions/32059370/when-is-it-appropriate-to-use-an-associated-type-versus-a-generic-type)
   - [Getting Started](https://dev.to/sendilkumarn/rust-and-webassembly-for-the-masses-wasm-pack-3d6p)
   - [Yew](https://yew.rs/docs/)
+  - [Console Error Panic Hook](https://github.com/rustwasm/console_error_panic_hook)
 - Graphs
   - [Graphlib](https://github.com/purpleprotocol/graphlib)
   - [Modeling Graphs in Rust Using Indices](http://smallcultfollowing.com/babysteps/blog/2015/04/06/modeling-graphs-in-rust-using-vector-indices/)

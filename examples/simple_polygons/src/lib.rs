@@ -1,12 +1,17 @@
+mod shared;
+
 use kami::geometry::utils;
 use kami::glm::Vec2;
 use kami::graph::planar_graph::PlanarGraph;
 
+use rand::Rng;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 
 #[wasm_bindgen]
 pub fn run() -> Result<(), JsValue> {
+    shared::set_panic_hook();
+
     // Grab references to the HTML document, etc.
     let window = web_sys::window().unwrap();
     let document = window.document().unwrap();
@@ -20,13 +25,7 @@ pub fn run() -> Result<(), JsValue> {
     // Create the main SVG element
     let w = 500.0f32;
     let h = 500.0f32;
-    let svg = document
-        .create_element_ns(Some("http://www.w3.org/2000/svg"), "svg")?
-        .dyn_into::<web_sys::SvgElement>()?;
-    svg.style().set_property("border", "solid")?;
-    svg.set_attribute("width", &w.to_string())?;
-    svg.set_attribute("height", &h.to_string())?;
-    svg.set_attribute("viewBox", "0 0 500 500")?;
+    let svg = shared::svg_main(&document, w, h).unwrap();
     body.append_child(&svg)?;
 
     // Per-example drawing / additions
@@ -37,62 +36,6 @@ pub fn run() -> Result<(), JsValue> {
     Ok(())
 }
 
-pub fn svg_polygon(
-    document: &web_sys::Document,
-    points: &Vec<Vec2>,
-    fill: &str,
-    stroke: &str,
-) -> Result<web_sys::Element, JsValue> {
-    // Convert vec of points into a single string like: "200,300 100,200 400,50"
-    let mut points_attr = points
-        .iter()
-        .map(|point| format!("{},{} ", point.x, point.y))
-        .collect::<String>();
-
-    // Remove the last space (probably doesn't matter, but we do it anyways)
-    points_attr.pop();
-
-    let element = document.create_element_ns(Some("http://www.w3.org/2000/svg"), "polygon")?;
-    element.set_attribute("points", &points_attr)?;
-    element.set_attribute("fill", fill)?;
-    element.set_attribute("stroke", stroke)?;
-
-    Ok(element)
-}
-
-pub fn svg_circle(
-    document: &web_sys::Document,
-    position: &Vec2,
-    radius: f32,
-    fill: &str,
-    stroke: &str,
-) -> Result<web_sys::Element, JsValue> {
-    let element = document.create_element_ns(Some("http://www.w3.org/2000/svg"), "circle")?;
-    element.set_attribute("cx", &position.x.to_string())?;
-    element.set_attribute("cy", &position.y.to_string())?;
-    element.set_attribute("r", &radius.to_string())?;
-    element.set_attribute("fill", fill)?;
-    element.set_attribute("stroke", stroke)?;
-
-    Ok(element)
-}
-
-pub fn svg_line(
-    document: &web_sys::Document,
-    a: &Vec2,
-    b: &Vec2,
-    stroke: &str,
-) -> Result<web_sys::Element, JsValue> {
-    let element = document.create_element_ns(Some("http://www.w3.org/2000/svg"), "line")?;
-    element.set_attribute("x1", &a.x.to_string())?;
-    element.set_attribute("y1", &a.y.to_string())?;
-    element.set_attribute("x2", &b.x.to_string())?;
-    element.set_attribute("y2", &b.y.to_string())?;
-    element.set_attribute("stroke", stroke)?;
-
-    Ok(element)
-}
-
 pub fn draw(
     document: &web_sys::Document,
     body: &web_sys::HtmlElement,
@@ -100,35 +43,79 @@ pub fn draw(
     w: f32,
     h: f32,
 ) -> Result<(), JsValue> {
-    // A simple triangle, 3 points
-    let points = vec![
-        Vec2::new(w * 0.5 + 200.0, h * 0.5 - 50.0),
-        Vec2::new(w * 0.5 - 200.0, h * 0.5 - 50.0),
-        Vec2::new(w * 0.5, h * 0.5 + 150.0),
-    ];
+    // PRNG
+    let mut rng = rand::thread_rng();
 
+    // Create some random triangles, 3 points each
+    let mut triangles = vec![];
+    let num_triangles = 5;
+    for _ in 0..num_triangles {
+        let a = Vec2::new(rng.gen_range(0.0, w), rng.gen_range(h * 0.5, h));
+        let b = Vec2::new(rng.gen_range(0.0, w), rng.gen_range(h * 0.5, h));
+        let c = Vec2::new(rng.gen_range(0.0, w), rng.gen_range(h * 0.5, h));
+        triangles.push((a, b, c));
+    }
+
+    // Draw each triangle and its incenter
+    for (a, b, c) in triangles.iter() {
+        let element = shared::svg_polygon(&document, &vec![*a, *b, *c], "none", "black").unwrap();
+        svg.append_child(&element)?;
+
+        // Calculate the triangle incenter
+        if let Some((incenter, inradius)) =
+        utils::calculate_triangle_incenter(a, b, c)
+        {
+            // Draw the incenter
+            let element = shared::svg_circle(&document, &incenter, inradius, "none", "blue").unwrap();
+            svg.append_child(&element)?;
+
+            // Draw the angle bisectors, which (by definition) meet at the triangle incenter
+            let line_a = shared::svg_line(&document, a, &incenter, "red").unwrap();
+            let line_b = shared::svg_line(&document, b, &incenter, "red").unwrap();
+            let line_c = shared::svg_line(&document, c, &incenter, "red").unwrap();
+            svg.append_child(&line_a)?;
+            svg.append_child(&line_b)?;
+            svg.append_child(&line_c)?;
+        }
+    }
     // If debugging...
     //web_sys::console::log_1(&points_attr.into());
 
-    let element = svg_polygon(&document, &points, "white", "black").unwrap();
-    svg.append_child(&element)?;
+    // Create some random line segments
+    let mut segments = vec![];
+    let num_segments = 100;
+    for _ in 0..num_segments {
+        let a = Vec2::new(rng.gen_range(0.0, w), rng.gen_range(0.0, h * 0.5));
+        let b = Vec2::new(rng.gen_range(0.0, w), rng.gen_range(0.0, h * 0.5));
+        segments.push((a, b));
+    }
 
-    // Calculate the triangle incenter
-    if let Some((incenter, inradius)) =
-        utils::calculate_triangle_incenter(&points[0], &points[1], &points[2])
-    {
-        // Draw the incenter
-        let element = svg_circle(&document, &incenter, inradius, "white", "blue").unwrap();
+    // Find intersections between segments
+    let mut intersections = 0;
+    for i in 0..segments.len() {
+        // Create the i-th line segment
+        let element = shared::svg_line(&document, &segments[i].0, &segments[i].1, "green").unwrap();
         svg.append_child(&element)?;
 
-        // Draw the angle bisectors, which (by definition) meet at the triangle incenter
-        let line_a = svg_line(&document, &points[0], &incenter, "red").unwrap();
-        let line_b = svg_line(&document, &points[1], &incenter, "red").unwrap();
-        let line_c = svg_line(&document, &points[2], &incenter, "red").unwrap();
-        svg.append_child(&line_a)?;
-        svg.append_child(&line_b)?;
-        svg.append_child(&line_c)?;
+        // Loop over all other line segments and check for intersections
+        for j in (i + 1)..segments.len() {
+            if let Some(intersection) = utils::calculate_line_segment_intersection(
+                &segments[i].0,
+                &segments[i].1,
+                &segments[j].0,
+                &segments[j].1,
+            ) {
+                let element = shared::svg_circle(&document, &intersection, 2.0, "red", "").unwrap();
+                svg.append_child(&element)?;
+
+                intersections += 1;
+            }
+        }
     }
+
+    let count = document.create_element("p")?;
+    count.set_inner_html(&format!("Found {} intersections", intersections));
+    body.append_child(&count)?;
 
     Ok(())
 }
