@@ -1,5 +1,6 @@
 mod shared;
 
+use kami::geometry::polygon::Polygon;
 use kami::geometry::utils;
 use kami::glm::Vec2;
 use kami::graph::planar_graph::PlanarGraph;
@@ -50,9 +51,9 @@ pub fn draw(
     let mut triangles = vec![];
     let num_triangles = 5;
     for _ in 0..num_triangles {
-        let a = Vec2::new(rng.gen_range(0.0, w), rng.gen_range(h * 0.5, h));
-        let b = Vec2::new(rng.gen_range(0.0, w), rng.gen_range(h * 0.5, h));
-        let c = Vec2::new(rng.gen_range(0.0, w), rng.gen_range(h * 0.5, h));
+        let a = Vec2::new(rng.gen_range(0.0, w * 0.5), rng.gen_range(h * 0.5, h));
+        let b = Vec2::new(rng.gen_range(0.0, w * 0.5), rng.gen_range(h * 0.5, h));
+        let c = Vec2::new(rng.gen_range(0.0, w * 0.5), rng.gen_range(h * 0.5, h));
         triangles.push((a, b, c));
     }
 
@@ -62,11 +63,10 @@ pub fn draw(
         svg.append_child(&element)?;
 
         // Calculate the triangle incenter
-        if let Some((incenter, inradius)) =
-        utils::calculate_triangle_incenter(a, b, c)
-        {
+        if let Some((incenter, inradius)) = utils::calculate_triangle_incenter(a, b, c) {
             // Draw the incenter
-            let element = shared::svg_circle(&document, &incenter, inradius, "none", "blue").unwrap();
+            let element =
+                shared::svg_circle(&document, &incenter, inradius, "none", "blue").unwrap();
             svg.append_child(&element)?;
 
             // Draw the angle bisectors, which (by definition) meet at the triangle incenter
@@ -108,7 +108,7 @@ pub fn draw(
                 let element = shared::svg_circle(&document, &intersection, 2.0, "red", "").unwrap();
                 svg.append_child(&element)?;
 
-                intersections += 1;
+                intersections += 1;//
             }
         }
     }
@@ -116,6 +116,48 @@ pub fn draw(
     let count = document.create_element("p")?;
     count.set_inner_html(&format!("Found {} intersections", intersections));
     body.append_child(&count)?;
+
+    // Test triangulation
+    let mut polygon = Polygon::new(&vec![
+        Vec2::new(0.0, 0.0),
+        Vec2::new(10.0, 7.0),
+        Vec2::new(12.0, 3.0),
+        Vec2::new(20.0, 8.0),
+        Vec2::new(13.0, 17.0),
+        Vec2::new(10.0, 12.0),
+        Vec2::new(12.0, 14.0),
+        Vec2::new(14.0, 9.0),
+        Vec2::new(8.0, 10.0),
+        Vec2::new(6.0, 14.0),
+        Vec2::new(10.0, 15.0),
+        Vec2::new(7.0, 18.0),
+        Vec2::new(0.0, 16.0),
+        Vec2::new(1.0, 13.0),
+        Vec2::new(3.0, 15.0),
+        Vec2::new(5.0, 8.0),
+        Vec2::new(-2.0, 9.0),
+        Vec2::new(5.0, 5.0),
+    ])
+    .unwrap();
+    //let mut polygon = Polygon::regular(8, 10.0, &Vec2::new(0.0, 0.0));
+    polygon.uniform_scale(10.0);
+    polygon.translate(&Vec2::new(250.0, 250.0));
+
+    let element = shared::svg_polygon(&document, polygon.get_vertices(), "none", "black").unwrap();
+    svg.append_child(&element)?;
+
+    let triangles = polygon.triangulate();
+
+    for (index, triangle) in triangles.iter().enumerate() {
+        let element = shared::svg_polygon(
+            &document,
+            triangle.get_vertices(),
+            &format!("hsl({}, 100%, 50%)", (index as f32 / triangles.len() as f32) * 360.0),
+            "none",
+        )
+        .unwrap();
+        svg.append_child(&element)?;
+    }
 
     Ok(())
 }

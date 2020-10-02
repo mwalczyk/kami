@@ -135,11 +135,13 @@ pub fn is_on_line_segment(a: &Vec2, b: &Vec2, p: &Vec2, include_endpoints: bool)
 /// Finds the index of the vertex that is closest to the specified target vertex `t` among a set of
 /// `points`.
 pub fn find_closest_to(t: &Vec2, points: &Vec<Vec2>) -> (usize, f32) {
+    // First, calculate the pair-wise distance between `t` and all of the other points
     let mut distances = points
         .iter()
         .map(|p| nalgebra_glm::distance(t, p))
         .collect::<Vec<_>>();
 
+    // Then, find the index (and value) of the smallest such distance
     let mut min_distance = std::f32::MAX;
     let mut min_index = 0;
 

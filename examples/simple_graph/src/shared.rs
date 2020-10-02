@@ -9,7 +9,11 @@ pub fn set_panic_hook() {
     console_error_panic_hook::set_once();
 }
 
-pub fn svg_main(document: &web_sys::Document, w: f32, h: f32) -> Result<web_sys::SvgElement, JsValue> {
+pub fn svg_main(
+    document: &web_sys::Document,
+    w: f32,
+    h: f32,
+) -> Result<web_sys::SvgElement, JsValue> {
     let svg = document
         .create_element_ns(Some("http://www.w3.org/2000/svg"), "svg")?
         .dyn_into::<web_sys::SvgElement>()?;
